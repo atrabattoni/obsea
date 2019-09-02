@@ -68,7 +68,7 @@ except Exception as e:
 extensions = ['sphinx.ext.autodoc', 'sphinx.ext.intersphinx', 'sphinx.ext.todo',
               'sphinx.ext.autosummary', 'sphinx.ext.viewcode', 'sphinx.ext.coverage',
               'sphinx.ext.doctest', 'sphinx.ext.ifconfig', 'sphinx.ext.mathjax',
-              'sphinx.ext.napoleon', 'nbsphinx', 'nbsphinx_link', 
+              'sphinx.ext.napoleon', 'nbsphinx', 'nbsphinx_link',
               'sphinx.ext.graphviz']
 
 # Add any paths that contain templates here, relative to this directory.
@@ -273,3 +273,18 @@ intersphinx_mapping = {
     'pandas': ('http://pandas.pydata.org/pandas-docs/stable', None),
     'scipy': ('https://docs.scipy.org/doc/scipy/reference', None),
 }
+
+autodoc_mock_imports = [
+    'cartopy',
+    'colorcet ',
+    'dask',
+    'matplotlib',
+    'numba',
+    'numpy',
+    'obspy',
+    'pandas',
+    'scikit-learn',
+    'scipy',
+    'shapely',
+    'xarray'
+]

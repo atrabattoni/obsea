@@ -283,7 +283,7 @@ autodoc_mock_imports = [
     'numpy',
     'obspy',
     'pandas',
-    'scikit-learn',
+    'sklearn',
     'scipy',
     'shapely',
     'xarray'

@@ -276,7 +276,7 @@ intersphinx_mapping = {
 
 autodoc_mock_imports = [
     'cartopy',
-    'colorcet ',
+    'colorcet',
     'dask',
     'matplotlib',
     'numba',

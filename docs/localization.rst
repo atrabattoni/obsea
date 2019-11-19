@@ -15,9 +15,9 @@ Output::
    ------------------
    Process AIS.
    Process Data.
-   [########################################] | 100% Completed |  1min  9.3s
+   [########################################] | 100% Completed |  1min 21.4s
    Estimate Uncertainties.
-   [########################################] | 100% Completed | 38.4s
+   [########################################] | 100% Completed | 21.8s
    Plot results.
 
 .. image:: localization.png

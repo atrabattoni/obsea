@@ -156,3 +156,28 @@ def track2xarr(track):
     _, index = np.unique(track['time'], return_index=True)
     track = track.isel(time=index)
     return track
+
+
+def correct_track(track, B):
+    """
+    Correct the accoustic center.
+
+    Change the track positions by B in the opposite direction of the ship
+    heading. For now works only for rectilinear trajectories.
+
+    Parameters
+    ----------
+    track : xr.DataArray
+        The track to correct.
+    B : float
+        The amount of correction.
+
+    Returns
+    -------
+    xr.DataArray
+        The corrected track
+    """
+    v, r0 = np.polyfit(track.time, track.values, 1)
+    u = v/np.abs(v)
+    track = track - u*B
+    return track

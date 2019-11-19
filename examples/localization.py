@@ -16,6 +16,8 @@ network, = inventory
 ais_fname = obsea.get_dataset_path('ais_marine_traffic')
 mmsi_list = pd.read_csv(
     obsea.get_dataset_path('mmsi_list'), squeeze=True).tolist()
+ship_length = pd.read_csv(
+    obsea.get_dataset_path('ship_length'), index_col='mmsi')
 
 
 # Paremeters
@@ -55,7 +57,7 @@ for station in network:
 
 # Process data
 @delayed
-def process(track, station):
+def process(mmsi, track, station):
 
     st = obsea.load_stream(
         track, client, inventory, station, 'BDH', nb_channels=1)
@@ -70,17 +72,20 @@ def process(track, station):
     tq = obsea.resample(tq, 'quefrency', nresample)
     tq = obsea.analytic_signal(tq)
 
-    track = obsea.track2xarr(track).interp_like(tq)
+    track = obsea.track2xarr(track)
+    B = 0.2*ship_length.loc[mmsi].values
+    track = obsea.correct_track(track, B)
+    track = track.interp_like(tq)
+
     delay = obsea.make_delay(track)
     beamform = obsea.make_beamform(xp, yp, tq, delay)
     img = beamform(celerity, depth)
-    img = obsea.blur(img, blur_sigma)
 
     return img
 
 
 print('Process Data.')
-results = [process(track, station) for track in tracks]
+results = [process(mmsi, track, station) for mmsi, track in tracks.items()]
 with ProgressBar():
     results = compute(*results)
 results = [result for result in results if result is not None]

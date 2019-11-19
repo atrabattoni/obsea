@@ -14,6 +14,7 @@ import numpy as np
 import xarray as xr
 import scipy.signal as sp
 from scipy.ndimage import gaussian_filter1d
+from .gis import track2xarr
 
 
 channel_dict = {
@@ -313,11 +314,7 @@ def orientation_frequency(r, track, bins, sigma=None, fmin=None, fmax=None):
     """
     r = r.sel(frequency=slice(fmin, fmax))
     r = r.dropna(dim='time')
-    x, y, t = np.array(track.coords).T
-    data = x + 1j * y
-    track = xr.DataArray(data=data, coords={'time': t}, dims='time')
-    _, index = np.unique(track['time'], return_index=True)
-    track = track.isel(time=index)
+    track = track2xarr(track)
     track = track.interp_like(r)
     track /= np.abs(track)
     result = r.conj() * track * np.exp(1j * np.pi / bins)

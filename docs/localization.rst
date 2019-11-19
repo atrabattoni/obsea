@@ -20,4 +20,4 @@ Output::
    [########################################] | 100% Completed | 21.8s
    Plot results.
 
-.. image:: localization.png
+.. image:: localization_result.png

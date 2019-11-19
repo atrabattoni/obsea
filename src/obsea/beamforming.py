@@ -226,30 +226,3 @@ def make_beamform(x, y, xarr, delay, interpolation='cubic'):
             img = np.abs(img)
         return xr.DataArray(img, coords={'x': x, 'y': y}, dims=('y', 'x'))
     return beamform
-
-
-def blur(img, sigma):
-    """
-    Blur a beamformed image.
-
-    Parameters
-    ----------
-    img : xarray.DataArray
-        Beamformed image.
-    sigma : float
-        Gaussian kernel standard deviation in meters used to blur.
-
-    Returns
-    -------
-    xarray.DataArray
-        Blured beamformed image.
-
-    """
-    x = img['x'].values
-    y = img['y'].values
-    dx = x[1] - x[0]
-    dy = y[1] - y[0]
-    sx = sigma / dx
-    sy = sigma / dy
-    img.values = gaussian_filter(img.values, (sy, sx))
-    return img

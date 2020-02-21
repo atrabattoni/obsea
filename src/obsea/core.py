@@ -6,7 +6,7 @@ representations.
 
 Attributes
 ----------
-channel_dict : dict
+channel_dict: dict
     Links channels names to their physical meanings (pressure, velocities)
 
 """
@@ -33,7 +33,7 @@ def trace2xarr(tr):
 
     Parameters
     ----------
-    tr : obspy.Trace
+    tr: obspy.Trace
         Trace of a time series of measured values
 
     Returns
@@ -60,13 +60,13 @@ def stft(tr, nperseg, step, water_level=None):
 
     Parameters
     ----------
-    tr : obspy.Trace
+    tr: obspy.Trace
         Trace of a time series of measured values.
-    nperseg : int
+    nperseg: int
         Length of each segment in samples used in the FFT computation.
-    step : int
+    step: int
         Number of point between segments.
-    water_level : int
+    water_level: int
         Water level (in dB) used in water level deconvolution. If None, no
         instrumental removal is perform (Defaults).
 
@@ -121,13 +121,13 @@ def time_frequency(st, nperseg, step, water_level=None, align=True):
 
     Parameters
     ----------
-    st : obspy.Stream
+    st: obspy.Stream
         List like object of multiple traces.
-    nperseg : int
+    nperseg: int
         Length of each segment in samples used in the FFT computation.
-    step : int
+    step: int
         Number of point between segments.
-    water_level : int, optional
+    water_level: int, optional
         Water level (in dB) used in water level deconvolution. If None, no
         instrumental removal is perform (Defaults).
 
@@ -146,35 +146,26 @@ def time_frequency(st, nperseg, step, water_level=None, align=True):
     return z[sorted(z.keys())]
 
 
-def azigram(z, nperseg, step, method='intensity', mode='net'):
-    """Compute azigram.
+def intensity(z, method='intensity', mode='net'):
+    """Compute acoustic intensity.
 
     Parameters
     ----------
-    z : xarray.DataSet
+    z: xarray.DataSet
         Must contain a time-frequency representation for horizontal velocities
-        ('vx' and 'vy') and for the pressure channel ('p') is method is
+        ('vx' and 'vy') and for the pressure channel ('p') if method is
         'intensity'
-    nperseg : int
-        Length of each segment in samples used in the mean direction of arrival
-        (DOA) and mean running length (MRL) computation.
-    step : int
-        Number of point between segments.
-    method : str, optional
+    method: str, optional
         Method used to compute DOA. Either 'intensity' or 'polarization'. If
         polarization is chosen angles are doubled so that the full 360 degree
         range is used (polarization suffers from 180 degree amgiguity)
-    mode : str, optional
+    mode: str, optional
         Mode used to compute DOA. Either 'net' or 'instantaneous'.
 
     Returns
     -------
-    xarray.DataArray
-        Azigram of horizontal DOA. DOA is given as a complex values so that the
-        real part point toward East and the imaginary part point toward North.
-        Modulus of those values are MRL. The DataArray as a attrs.double_angle
-        attribute which states if values represent the DOA or its double.
-
+    xarray.DataSet
+        Acoustic intensity as a Dataset with components 'vx' and 'vy'.
     """
     if method not in ['intensity', 'polarization']:
         print('error')
@@ -208,8 +199,47 @@ def azigram(z, nperseg, step, method='intensity', mode='net'):
             result /= np.abs(result)
         result = result ** 2
         double_angle = True
+    result.attrs['double_angle'] = double_angle
+    return result
+
+
+def azigram(z, nperseg, step, method='intensity', mode='net', dim='time'):
+    """Compute azigram.
+
+    Parameters
+    ----------
+    z: xarray.DataSet
+        Must contain a time-frequency representation for horizontal velocities
+        ('vx' and 'vy') and for the pressure channel ('p') is method is
+        'intensity'
+    nperseg: int
+        Length of each segment in samples used in the mean direction of arrival
+        (DOA) and mean running length (MRL) computation.
+    step: int
+        Number of point between segments.
+    method: str, optional
+        Method used to compute DOA. Either 'intensity' or 'polarization'. If
+        polarization is chosen angles are doubled so that the full 360 degree
+        range is used (polarization suffers from 180 degree amgiguity)
+    mode: str, optional
+        Mode used to compute DOA. Either 'net' or 'instantaneous'.
+    dim: str, optional
+        Dimension along which to compute the mean running length. Choose 'time'
+        for tonal signals and 'frequency' for impulsive signals.
+
+    Returns
+    -------
+    xarray.DataArray
+        Azigram of horizontal DOA. DOA is given as a complex values so that the
+        real part point toward East and the imaginary part point toward North.
+        Modulus of those values are MRL. The DataArray as a attrs.double_angle
+        attribute which states if values represent the DOA or its double.
+
+    """
+    result = intensity(z, method=method, mode=mode)
+    double_angle = result.attrs['double_angle']
     # moving average
-    result = result.rolling(time=nperseg, center=True).construct(
+    result = result.rolling(**{dim: nperseg}, center=True).construct(
         'w', stride=step)
     result = result.mean('w')
     result.attrs['double_angle'] = double_angle
@@ -225,22 +255,22 @@ def time_azimuth(r, nperseg, step, bins, sigma=None, fmin=None, fmax=None):
 
     Parameters
     ----------
-    r : xarray.DataArray
+    r: xarray.DataArray
         Azigram. Values are complex number which argument are the DOAs and
         modulus are the MRL or any other wanted weight.
-    nperseg : int
+    nperseg: int
         Lenght of each segment in samples used in the density estimation.
-    step : int
+    step: int
         Number of points between segments.
-    bins : int
+    bins: int
         Number of bins used to computes histograms on 360 degrees.
-    sigma : float, optional
+    sigma: float, optional
         Standard deviation for Gaussian kernel in degrees. If None, no
         smoothing is applied (default).
-    fmin : float, optional
+    fmin: float, optional
         Values which frequencies are below fmin are not used in the density
         estimation. If None no restriction is applied (default).
-    fmax : float, optional
+    fmax: float, optional
         Values which frequencies are above fmax are not used in the density
         estimation. If None no restriction is applied (default).
 
@@ -289,20 +319,20 @@ def orientation_frequency(r, track, bins, sigma=None, fmin=None, fmax=None):
 
     Parameters
     ----------
-    r : xarray.DataArray
+    r: xarray.DataArray
         Azigram. Values are complex number which argument are the DOAs and
         modulus are the MRL or any other wanted weight.
-    track : shapely.LineString
+    track: shapely.LineString
         Acoustic source trajectory
-    bins : int
+    bins: int
         Number of bins used to computes histograms on 360 degrees.
-    sigma : float, optional
+    sigma: float, optional
         Standard deviation for Gaussian kernel in degrees. If None, no
         smoothing is applied (default).
-    fmin : float, optional
+    fmin: float, optional
         Values which frequencies are below fmin are not used in the density
         estimation. If None no restriction is applied (default).
-    fmax : float, optional
+    fmax: float, optional
         Values which frequencies are above fmax are not used in the density
         estimation. If None no restriction is applied (default).
 
@@ -350,9 +380,9 @@ def cepstrogram(xarr, analytic=False):
 
     Parameters
     ----------
-    xarr : xarray.DataArray
+    xarr: xarray.DataArray
         Time-frequency representation.
-    analytic : bool, optional
+    analytic: bool, optional
         Whether to return the analytical signal of the cepstrogram.
 
     Returns
@@ -391,7 +421,7 @@ def analytic_signal(xarr):
 
     Parameters
     ----------
-    xarr : xarray.DataArray
+    xarr: xarray.DataArray
         One sided cepstrogram (or spectrogram).
 
     Returns

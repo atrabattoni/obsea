@@ -204,7 +204,7 @@ def intensity(z, method='intensity', mode='net'):
 
 
 def azigram(z, nperseg, step, method='intensity', mode='net', dim='time',
-            iid=False):
+            iid=1):
     """Compute azigram.
 
     Parameters
@@ -242,10 +242,9 @@ def azigram(z, nperseg, step, method='intensity', mode='net', dim='time',
     result = intensity(z, method=method, mode=mode)
     double_angle = result.attrs['double_angle']
     # moving average
-    result = result.rolling(**{dim: nperseg}, center=True).construct(
+    result = result.rolling(**{dim: iid*nperseg}, center=True).construct(
         'w', stride=step)
-    if iid:
-        result = result.isel(w=slice(None, None, iid))
+    result = result.isel(w=slice(None, None, iid))
     result = result.mean('w')
     result.attrs['double_angle'] = double_angle
     return result

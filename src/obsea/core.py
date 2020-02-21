@@ -203,7 +203,8 @@ def intensity(z, method='intensity', mode='net'):
     return result
 
 
-def azigram(z, nperseg, step, method='intensity', mode='net', dim='time'):
+def azigram(z, nperseg, step, method='intensity', mode='net', dim='time',
+            iid=False):
     """Compute azigram.
 
     Parameters
@@ -226,6 +227,8 @@ def azigram(z, nperseg, step, method='intensity', mode='net', dim='time'):
     dim: str, optional
         Dimension along which to compute the mean running length. Choose 'time'
         for tonal signals and 'frequency' for impulsive signals.
+    iid: int, optional
+        TODO
 
     Returns
     -------
@@ -241,6 +244,8 @@ def azigram(z, nperseg, step, method='intensity', mode='net', dim='time'):
     # moving average
     result = result.rolling(**{dim: nperseg}, center=True).construct(
         'w', stride=step)
+    if iid:
+        result = result.isel(w=slice(None, None, iid))
     result = result.mean('w')
     result.attrs['double_angle'] = double_angle
     return result

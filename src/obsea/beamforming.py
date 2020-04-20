@@ -7,7 +7,6 @@ Used to relocalize recoding instruments on the seafloor.
 import numpy as np
 import xarray as xr
 from numba import njit
-from scipy.ndimage import gaussian_filter
 
 
 @njit

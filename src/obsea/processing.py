@@ -61,7 +61,7 @@ def find_knee(s):
     return knee
 
 
-def svd_filter(xarr):
+def svd_filter(xarr, remove_mean=True):
     """
     Perform SVD clutter filtering.
 
@@ -70,15 +70,21 @@ def svd_filter(xarr):
     xarr : xarray.DataArray
         2D representation to filter.
 
+    remove_mean : Bool
+        Weather to remove the mean before SVD filtering.
+
     Returns
     -------
     xarray.DataArray
         Filtered 2D representation.
 
     """
+    xarr = xarr.copy()
     xarr = xarr.dropna(dim='time')
+    if remove_mean:
+        xarr -= xarr.mean(dim='time')
     u, s, vh = np.linalg.svd(
-        (xarr - xarr.mean(dim='time')).values,
+        xarr.values,
         full_matrices=False)
     knee = find_knee(s)
     mask = np.arange(s.shape[0]) < knee

@@ -14,6 +14,7 @@ from .ais import *
 from .beamforming import *
 from .core import *
 from .datasets import *
+from .detection import *
 from .gis import *
 from .io import *
 from .plot import *

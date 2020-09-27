@@ -70,3 +70,10 @@ def load_stream(track, client, inventory, station, channel, min_duration=600,
             return None
     st.attach_response(inventory)
     return st
+
+
+def intersection(st):
+    starttime = max([tr.stats.starttime for tr in st])
+    endtime = min([tr.stats.endtime for tr in st])
+    st.trim(starttime, endtime)
+    return starttime, endtime

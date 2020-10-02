@@ -17,7 +17,7 @@ grid.keys() = ["dt", "dr", "da", "dv", "rmax, "vmax"]
 
 import numpy as np
 from numba import njit, vectorize
-from numpy.random import rand, randint, randn
+from numpy.random import choice, rand, randint, randn
 from tqdm import tqdm
 
 
@@ -40,7 +40,8 @@ def argchoice(p, n=1):
     """
     cdf = np.cumsum(p)
     # rng = rand(n) * cdf[-1]  # random sampling
-    rng = np.arange(rand() * cdf[-1] / n, cdf[-1], cdf[-1] / n)  # systematic sampling
+    rng = np.arange(rand() * cdf[-1] / n, cdf[-1],
+                    cdf[-1] / n)  # systematic sampling
     return np.searchsorted(cdf, rng)
 
 
@@ -198,7 +199,7 @@ class Tracker:
         self.initialize = initialize
 
         @njit
-        def predict(x, yr, ya, n):
+        def predict(w, x, yr, ya, n):
             """
             Predict states of particules x at time step n from observations y.
 
@@ -214,29 +215,37 @@ class Tracker:
             for k in range(len(x)):
                 if isempty(x[k, n - 1]):
                     if rand() < pb:
-                        x[k, n] = move(birth(yr[n - 1], ya[n - 1]))
+                        w[k], x[k, n] = birth(yr[n], ya[n])
                 else:
                     if rand() < ps:
                         x[k, n] = move(x[k, n - 1])
 
         self.predict = predict
 
+        pr = rg
+        pvr = np.sqrt(vmax**2 - vg**2) - \
+            np.sqrt(vmin**2 - clamp(vg**2, 0, vmin**2))
+        p = np.outer(pr, pvr)
+
         @njit
         def birth(yr, ya):
-            pr = rg
-            pvr = np.sqrt(vmax**2 - vg**2) - \
-                np.sqrt(vmin**2 - clamp(vg**2, 0, vmin**2))
-            p = np.outer(pr, pvr)
-            i = argchoice(np.ravel(yr * p))
+            w = 1.0
+            # range
+            i = argchoice(np.ravel(yr * p))[0]
+            w /= np.ravel(yr)[i]
             r = i2r(i // yr.shape[-1])
             vr = i2vr(i % yr.shape[-1])
-            a = i2a(argchoice(ya))
+            # azimuth
+            i = argchoice(ya)[0]
+            w /= ya[i]
+            a = i2a(i)
             vamax = np.sqrt(vmax**2 - vr**2)
             vamin = np.sqrt(vmin**2 - clamp(vr**2, 0, vmin**2))
-            va = (vamax - vamin) * np.random.rand(1) + vamin
-            va *= np.random.choice(np.array([-1, 1]), 1)
-            x = np.concatenate((r, a, vr, va))
-            return x
+            va = (vamax - vamin) * rand() + vamin
+            va *= choice(np.array([-1.0, 1.0]))
+            # output
+            state = np.array([r, a, vr, va])
+            return w, state
 
         self.birth = birth
 
@@ -274,6 +283,8 @@ class Tracker:
             y += vy * dt + a[1] * dt**2 / 2.0
             vx += a[0] * dt
             vy += a[1] * dt
+            vx = clamp(vx, -vmax, vmax)
+            vy = clamp(vy, -vmax, vmax)
             state = np.array([x, y, vx, vy])
             return state
 
@@ -292,14 +303,9 @@ class Tracker:
         def update(w, x, yr, ya, n):
             for k in range(len(x)):
                 if not isempty(x[k, n]):
-                    r, a, vr, va = x[k, n]
+                    r, a, vr, _ = x[k, n]
                     # range
-                    v = modulus(vr, va)
-                    if abs(v) > vmax:
-                        w[k] *= 0.0
-                    elif abs(v) < vmin:
-                        w[k] *= 0.0
-                    elif r > rmax:
+                    if r > rmax:
                         w[k] *= 1.0
                     else:
                         w[k] *= (1 - pd) + pd * yr[n, r2i(r), vr2i(vr)]
@@ -311,8 +317,8 @@ class Tracker:
         self.update = update
 
         @njit
-        def resample(w, x):
-            x[:] = x[argchoice(w, len(w))]
+        def resample(w, x, n):
+            x[:, :n] = x[argchoice(w, len(w)), :n]
             w[:] = 1.0 / len(w)
 
         self.resample = resample
@@ -321,17 +327,15 @@ class Tracker:
 
             if not checkgrid(grid, yr, ya):
                 return None
-            
+
             Nt = len(yr)
 
             w, x = initialize(Nt)
             for n in tqdm(range(len(yr))):
-                predict(x, yr, ya, n)
+                predict(w, x, yr, ya, n)
                 update(w, x, yr, ya, n)
-                resample(w, x)
+                resample(w, x, n)
 
             return w, x
 
         self.track = track
-
-        

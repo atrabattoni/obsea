@@ -83,18 +83,14 @@ def checkgrid(grid, yr, ya):
     ag = np.arange(0, 2 * np.pi + da, da)
 
     if not len(yr) == len(ya):
-        print(
+        ValueError(
             f"Cepstral duration {len(yr)} do not match azimuthal duration {len(ya)}")
-        return False
     if not yr.shape[1:] == (len(rg), len(vg)):
-        print(
+        ValueError(
             f"Cepstral observation {yr.shape[1:]} do not match grid {(len(rg), len(vg))}")
-        return False
     if not ya.shape[1:] == (len(ag),):
-        print(
+        ValueError(
             f"Azimuthal observation {ya.shape[1:]} do not match grid {(len(ag),)}")
-        return False
-    return True
 
 
 class Tracker:

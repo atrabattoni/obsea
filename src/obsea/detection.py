@@ -1,6 +1,9 @@
 import numpy as np
 import xarray as xr
-from tqdm import tqdm
+from numba import njit
+from scipy.ndimage import gaussian_filter
+
+from .beamforming import linear_beamform
 
 
 def abs2(z):
@@ -38,7 +41,103 @@ def t_range(t, dt, t_step=None):
     return np.arange(t_min, t_max, t_step)
 
 
-def tonal_detection(u, n, orientation, R, dt, endpoint=True, t_step=None):
+def ms2tw(mu, sigma):
+    thresh = mu / 2
+    weight = mu / sigma[np.newaxis, np.newaxis, :]**2
+    return thresh, weight
+
+
+def v2i(x, dx):
+    return np.round(x / dx).astype(int)
+
+
+@njit
+def compute_logell(x, thresh, weight, index, halfwidth):
+
+    _, Nt = x.shape
+    Ni, Nr, _ = thresh.shape
+
+    logell = np.zeros((Ni, Nr, Nt))
+    for i in range(Ni):  # interference
+        for j in range(Nr):  # distance
+            if index[i, j] == 0:
+                continue
+            qrange = range(index[i, j] - halfwidth,
+                           index[i, j] + halfwidth + 1)
+            for k in qrange:  # quefrency
+                for l in range(Nt):  # time
+                    logell[i, j, l] += weight[i, j, k] * \
+                        (x[k, l] - thresh[i, j, k])
+    return logell
+
+
+def build_model(mu, sigma, tdoa, dtau, fs):
+    mu.values = np.nan_to_num(mu.values)
+    sigma.values = np.nan_to_num(sigma.values)
+    tdoa.values = np.nan_to_num(tdoa.values)
+    thresh, weight = ms2tw(mu.values, sigma.values)
+    index = v2i(tdoa.values, 1/fs)
+    halfwidth = v2i(3*dtau, 1/fs)
+    model = {
+        "thresh": thresh,
+        "weight": weight,
+        "index": index,
+        "halfwidth": halfwidth,
+    }
+    return model
+
+
+def cepstral_detection(ceps, model, dr, rmax, dv, vmax, nsigma, dt,
+                       t_step=None, t=None):
+    # Logell computation
+    data = compute_logell(ceps.values, **model)
+    logell = xr.DataArray(
+        data=data,
+        coords={
+            "interference": [1, 2, 3],
+            "distance": dr * np.arange(data.shape[1]),  # TODO
+            "time": ceps["time"],
+        },
+        dims=("interference", "distance", "time")
+    )
+
+    # Output allocation
+    if t is None:
+        t = t_range(logell["time"].values, dt, t_step=t_step)
+    r = np.arange(0, rmax + dr, dr)
+    v = np.arange(-vmax, vmax + dv, dv)
+    out = xr.DataArray(
+        data=np.zeros((len(t), len(r), len(v))),
+        coords={
+            "time": t,
+            "distance": r,
+            "speed": v,
+        },
+        dims=("time", "distance", "speed")
+    )
+
+    # Speed filtering
+    for i in [1, 2, 3]:
+        for t0 in t:
+            # Beamform on segments
+            query = {
+                "interference": i,
+                "time": slice(t0 - dt/2, t0 + dt/2),
+            }
+            beam = linear_beamform(
+                v, r, logell.loc[query], dims=["distance", "speed"])
+            # Process noise
+            beam = np.exp(beam)
+            beam.values = gaussian_filter(beam.values, (nsigma, 0))
+            beam = np.log(beam)
+            # Sum interferences
+            out.loc[{"time": t0}] += beam
+
+    return np.exp(out)
+
+
+def tonal_detection(u, n, orientation, R, dt, endpoint=True,
+                    t_step=None, t=None):
     """ 
     Compute the likelihood ratio for tonal sources.
 
@@ -66,7 +165,8 @@ def tonal_detection(u, n, orientation, R, dt, endpoint=True, t_step=None):
         Likelihood ratio with dimensions "time" and "azimuth". 
     """
     gamma = R2gamma(R)
-    t = t_range(u["time"].values, dt, t_step=t_step)
+    if t is None:
+        t = t_range(u["time"].values, dt, t_step=t_step)
     zeta = zeta_range(n, orientation, gamma, endpoint=endpoint)
     ell = xr.DataArray(
         data=np.zeros((len(t), len(zeta))),
@@ -77,7 +177,7 @@ def tonal_detection(u, n, orientation, R, dt, endpoint=True, t_step=None):
         dims=("time", "azimuth"),
     )
 
-    for t0 in tqdm(t):
+    for t0 in t:
         ell.loc[{"time": t0}] = (
             wrapcauchy(u.loc[{"time": slice(t0 - dt/2, t0 + dt/2)}], zeta)
             .prod("time")
@@ -87,7 +187,8 @@ def tonal_detection(u, n, orientation, R, dt, endpoint=True, t_step=None):
     return ell
 
 
-def impulsive_detection(u, n, orientation, R, dt, df, pd, endpoint=True, t_step=None):
+def impulsive_detection(u, n, orientation, R, dt, df, pd, endpoint=True,
+                        t_step=None, t=None):
     """ 
     Compute the likelihood ratio for impulsive sources.
 
@@ -121,7 +222,8 @@ def impulsive_detection(u, n, orientation, R, dt, df, pd, endpoint=True, t_step=
     gamma = R2gamma(R)
     f = u["frequency"].values
     nf = int(round(df / (f[1] - f[0])))
-    t = t_range(u["time"].values, dt, t_step=t_step)
+    if t is None:
+        t = t_range(u["time"].values, dt, t_step=t_step)
     zeta = zeta_range(n, orientation, gamma, endpoint=endpoint)
     ell = xr.DataArray(
         data=np.zeros((len(t), len(zeta))),
@@ -132,7 +234,7 @@ def impulsive_detection(u, n, orientation, R, dt, df, pd, endpoint=True, t_step=
         dims=("time", "azimuth"),
     )
 
-    for t0 in tqdm(t):
+    for t0 in t:
         ell.loc[{"time": t0}] = (
             wrapcauchy(u.loc[{"time": slice(t0 - dt/2, t0 + dt/2)}], zeta)
             # .rolling(frequency=nf, center=True)

@@ -225,3 +225,25 @@ def make_beamform(x, y, xarr, delay, interpolation='cubic'):
             img = np.abs(img)
         return xr.DataArray(img, coords={'x': x, 'y': y}, dims=('y', 'x'))
     return beamform
+
+
+@njit
+def linear_core(a, b, zp, xp, yp):
+    img = np.zeros((len(b), len(a)), dtype=zp.dtype)
+    yp0 = yp[0]
+    dyp = yp[1] - yp[0]
+    for i in range(len(b)):
+        for j in range(len(a)):
+            for k in range(len(xp)):
+                d = a[j] * xp[k] + b[i]
+                signal = zp[:, k]
+                img[i, j] += cubic(d, yp0, dyp, signal)
+    return img
+
+
+def linear_beamform(a, b, xarr, dims=("b", "a")):
+    zp = xarr.values
+    xp = xarr['time'].values - xarr['time'].values.mean()
+    yp = xarr['distance'].values
+    img = linear_core(a, b, zp, xp, yp)
+    return xr.DataArray(img, coords={dims[0]: b, dims[1]: a}, dims=dims)

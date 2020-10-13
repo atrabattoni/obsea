@@ -17,7 +17,7 @@ grid.keys() = ["dt", "dr", "da", "dv", "rmax, "vmax"]
 
 import numpy as np
 from numba import njit, vectorize
-from numpy.random import choice, rand, randint, randn
+from numpy.random import choice, rand, randn
 from tqdm import tqdm
 
 
@@ -136,37 +136,31 @@ class Tracker:
         @njit
         def i2r(i):
             return i * dr
-
         self.i2r = i2r
 
         @njit
         def r2i(r):
             return int(round(r / dr))
-
         self.r2i = r2i
 
         @njit
         def i2a(i):
             return i * da
-
         self.i2a = i2a
 
         @njit
         def a2i(a):
             return int(round(a / da))
-
         self.a2i = a2i
 
         @njit
         def i2vr(i):
             return -vmax + i * dv
-
         self.i2vr = i2vr
 
         @njit
         def vr2i(vr):
             return int(round((vr + vmax) / dv))
-
         self.vr2i = vr2i
 
         @njit
@@ -191,7 +185,6 @@ class Tracker:
             w = np.full(Np, 1.0 / Np)
             x = np.full((Np, Nt, 4), np.nan)
             return w, x
-
         self.initialize = initialize
 
         @njit
@@ -215,7 +208,6 @@ class Tracker:
                 else:
                     if rand() < ps:
                         x[k, n] = move(x[k, n - 1])
-
         self.predict = predict
 
         pr = rg
@@ -242,7 +234,6 @@ class Tracker:
             # output
             state = np.array([r, a, vr, va])
             return w, state
-
         self.birth = birth
 
         @njit
@@ -254,7 +245,6 @@ class Tracker:
             vy = vr * np.cos(a) - va * np.sin(a)
             state = np.array([x, y, vx, vy])
             return state
-
         self.cartesian = cartesian
 
         @njit
@@ -266,7 +256,6 @@ class Tracker:
             va = vx * np.cos(a) - vy * np.sin(a)
             state = np.array([r, a, vr, va])
             return state
-
         self.polar = polar
 
         @njit
@@ -283,7 +272,6 @@ class Tracker:
             vy = clamp(vy, -vmax, vmax)
             state = np.array([x, y, vx, vy])
             return state
-
         self.constant_speed = constant_speed
 
         @njit
@@ -292,7 +280,6 @@ class Tracker:
             state = constant_speed(state)
             state = polar(state)
             return state
-
         self.move = move
 
         @njit
@@ -302,36 +289,29 @@ class Tracker:
                     r, a, vr, _ = x[k, n]
                     # range
                     if r > rmax:
-                        w[k] *= 1.0
+                        w[k] *= 0.0
                     else:
                         w[k] *= (1 - pd) + pd * yr[n, r2i(r), vr2i(vr)]
                     # azimuth
                     w[k] *= (1 - pd) + pd * ya[n, a2i(a)]
             # normazlization
             w /= np.sum(w)
-
         self.update = update
 
         @njit
         def resample(w, x, n):
             x[:, :n] = x[argchoice(w, len(w)), :n]
             w[:] = 1.0 / len(w)
-
         self.resample = resample
 
         def track(yr, ya):
-
-            if not checkgrid(grid, yr, ya):
-                return None
-
+            checkgrid(grid, yr, ya)
             Nt = len(yr)
-
             w, x = initialize(Nt)
             for n in tqdm(range(len(yr))):
                 predict(w, x, yr, ya, n)
                 update(w, x, yr, ya, n)
                 resample(w, x, n)
-
             return w, x
-
         self.track = track
+

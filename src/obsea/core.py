@@ -91,7 +91,7 @@ def stft(tr, nperseg, step, water_level=None):
     coords['frequency'] = np.fft.rfftfreq(nperseg, 1 / tr.stats.sampling_rate)
     result = xr.DataArray(data=data, coords=coords, dims=result.dims)
     # remove response
-    if water_level:
+    if water_level is not None:
         response = (tr.stats.response.get_evalresp_response_for_frequencies(
             result.coords['frequency']))
         w = np.abs(response).max() * 10.0 ** (-water_level / 20.0)

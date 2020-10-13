@@ -61,7 +61,7 @@ def find_knee(s):
     return knee
 
 
-def svd_filter(xarr, remove_mean=True):
+def svd_filter(xarr, remove_mean=True, drop_nan=True):
     """
     Perform SVD clutter filtering.
 
@@ -80,7 +80,11 @@ def svd_filter(xarr, remove_mean=True):
 
     """
     xarr = xarr.copy()
-    xarr = xarr.dropna(dim='time')
+    if drop_nan:
+        xarr = xarr.dropna(dim='time')
+    else:
+        xarr.values[np.isnan(xarr.values)] = 0.0
+        xarr.values[np.isinf(xarr.values)] = 0.0
     if remove_mean:
         xarr -= xarr.mean(dim='time')
     u, s, vh = np.linalg.svd(
@@ -91,6 +95,18 @@ def svd_filter(xarr, remove_mean=True):
     s[mask] = 0
     filtered = u @ np.apply_along_axis(np.diag, -1, s) @ vh
     return xr.DataArray(filtered, coords=xarr.coords, dims=xarr.dims)
+
+
+def batch_svd_filter(xarr, width, remove_mean=False):
+    xarr = xarr.copy()
+    starttime = xarr["time"][0].values
+    endtime = xarr["time"][-1].values
+    t = np.arange(starttime, endtime + width, width)
+    for k in range(len(t) - 1):
+        query = {"time": slice(t[k], t[k + 1])}
+        xarr.loc[query] = svd_filter(
+            xarr.loc[query], remove_mean=remove_mean, drop_nan=False)
+    return xarr
 
 
 def decimate(xarr, dim, factor):

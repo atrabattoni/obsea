@@ -22,8 +22,8 @@ def get_dataset_path(dataset):
     Parameters
     ----------
     dataset : string
-        Dataset name. Can be 'ais_cls', 'ais_marine_traffic', 'mmsi_list' or
-        'station_list'.
+        Dataset name. Can be 'ais_cls', 'ais_marine_traffic', 'mmsi_list',
+        'station_list' or 'ais_week_cls'.
 
     Returns
     -------

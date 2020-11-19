@@ -8,6 +8,16 @@ import pandas as pd
 import datetime as dt
 
 
+def cls_time_parser(x):
+    return dt.datetime(
+        int(x[6:10]),
+        int(x[3:5]),
+        int(x[0:2]),
+        int(x[11:13]),
+        int(x[14:16]),
+        int(x[17:19]))
+
+
 def read_cls(fname, cargo_and_tanker=True):
     """
     Read AIS data from CLS format.
@@ -26,26 +36,14 @@ def read_cls(fname, cargo_and_tanker=True):
 
     """
     ais = pd.read_csv(fname, sep=';')
+    s = ais['locDate'] + ' ' + ais['locTime']
+    ais.loc[:, 'time'] = s.apply(cls_time_parser)
 
     if cargo_and_tanker:
         mask = ((ais['aisShipType'] >= 70)
                 & (ais['aisShipType'] < 90)
                 & (ais['navigationStatus'] == 0))
         ais = ais[mask]
-
-    def parser(x):
-        return dt.datetime(
-            int(x[6:10]),
-            int(x[3:5]),
-            int(x[0:2]),
-            int(x[11:13]),
-            int(x[14:16]),
-            int(x[17:19]))
-
-    s = ais.locDate + ' ' + ais.locTime
-    ais.loc[:, 'time'] = s.apply(parser)
-
-    ais = ais[['mmsi', 'time', 'lon', 'lat']]
 
     return ais
 
@@ -68,22 +66,20 @@ def read_marine_traffic(fname, terrestrial=True):
 
     """
     ais = pd.read_csv(fname, parse_dates=['TIMESTAMP UTC'])
-
-    if terrestrial:
-        mask = (ais['STATION'] == 'TER') & (ais['STATUS'] == 0)
-        ais = ais[mask]
-
-    ais = ais.drop(columns=['STATION', 'STATUS'])
     ais = ais.rename(columns={
         'MMSI': 'mmsi',
+        'STATUS': 'navigationStatus',
         'SPEED': 'sog',
         'COURSE': 'cog',
-        'HEADING': 'heading',
+        'HEADING': 'trueHeading',
         'LAT': 'lat',
         'LON': 'lon',
-        'TIMESTAMP UTC': 'time'})
+        'TIMESTAMP UTC': 'time',
+        'STATION': 'source'})
 
-    ais = ais[['mmsi', 'time', 'lon', 'lat']]
+    if terrestrial:
+        mask = (ais['source'] == 'TER') & (ais['status'] == 0)
+        ais = ais[mask]
 
     return ais
 

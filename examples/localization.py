@@ -72,7 +72,6 @@ def process(mmsi, track, station):
     tq = obsea.resample(tq, 'quefrency', nresample)
     tq = obsea.analytic_signal(tq)
 
-    track = obsea.track2xarr(track)
     B = 0.2*ship_length.loc[mmsi].values
     track = obsea.correct_track(track, B)
     track = track.interp_like(tq)

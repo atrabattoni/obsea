@@ -6,7 +6,7 @@ representations.
 
 Attributes
 ----------
-channel_dict: dict
+CHANNEL_TO_AXIS: dict
     Links channels names to their physical meanings (pressure, velocities)
 
 """
@@ -14,105 +14,69 @@ import numpy as np
 import xarray as xr
 import scipy.signal as sp
 from scipy.ndimage import gaussian_filter1d
-from .gis import track2xarr
 
-
-channel_dict = {
+CHANNEL_TO_AXIS = {
     'BDH': 'p',
     'BH1': 'vy',
     'BH2': 'vx',
     'BHZ': 'vz'}
 
 
-def trace2xarr(tr):
+def to_dataset(st):
     """
-    Convert an obspy trace into an xarray DataArray.
-
-    Time is converted as POSIX timestamps (in seconds) and gaps are converted
-    into NaN values.
-
-    Parameters
-    ----------
-    tr: obspy.Trace
-        Trace of a time series of measured values
-
-    Returns
-    -------
-    xarray.DataArray
-        A 1D DataArray with 'time' coordinate. All metadata found in
-        Trace.stats is stored in the attrs attribute of the returned DataArray.
-
+    Convert a stream to a dataset.
     """
-    xarr = xr.DataArray(
-        data=tr.data.astype('float'),
-        coords={'time': tr.times('timestamp').data},
-        dims='time',
-        attrs=tr.stats)
-    return xarr
+    tr = st[0]
+    starttime = np.datetime64(tr.stats.starttime.ns, 'ns')
+    endtime = np.datetime64(tr.stats.endtime.ns, 'ns')
+    delta = np.timedelta64(int(round(1e9 * tr.stats.delta)), 'ns')
+    t = np.arange(starttime, endtime + delta, delta)
+    data_vars = {CHANNEL_TO_AXIS[tr.stats.channel]:
+                 xr.DataArray(tr.data, dims='time', attrs=tr.stats)
+                 for tr in st}
+    coords = {'time': t}
+    attrs = {'starttime': starttime, 'endtime': endtime, 'delta': delta}
+    return xr.Dataset(data_vars, coords, attrs)
 
 
-def stft(tr, nperseg, step, water_level=None):
+def stft(da, nperseg, step):
     """
     Compute the Short Time Fourrier Transform (STFT) of a trace.
-
-    Instrumental response can be remove by water level deconvolution if it is
-    attached to the trace.
-
-    Parameters
-    ----------
-    tr: obspy.Trace
-        Trace of a time series of measured values.
-    nperseg: int
-        Length of each segment in samples used in the FFT computation.
-    step: int
-        Number of point between segments.
-    water_level: int
-        Water level (in dB) used in water level deconvolution. If None, no
-        instrumental removal is perform (Defaults).
-
-    Returns
-    -------
-    xarray.DataArray
-        STFT of the trace as a DataArray with appropriate 'time' and
-        'frequency' coordinates.
-
     """
-    result = trace2xarr(tr)
-    # rolling window view
-    result = (result.rolling(time=nperseg, center=True)
+    # rolling window
+    view = (da.rolling(time=nperseg, center=True)
               .construct('frequency', stride=step))
     # tapper
-    win = xr.DataArray(data=sp.get_window('hann', nperseg), dims='frequency')
+    win = sp.get_window('hann', nperseg)
     win /= win.sum()
-    result = result * win
+    win = xr.DataArray(win, dims='frequency')
+    data = view * win
     # fft
-    data = np.fft.rfft(result.values)
-    coords = dict(result.coords)
-    coords['frequency'] = np.fft.rfftfreq(nperseg, 1 / tr.stats.sampling_rate)
-    result = xr.DataArray(data=data, coords=coords, dims=result.dims)
-    # remove response
-    if water_level is not None:
-        response = (tr.stats.response.get_evalresp_response_for_frequencies(
-            result.coords['frequency']))
-        w = np.abs(response).max() * 10.0 ** (-water_level / 20.0)
-        mask = np.where(np.abs(response) < w)
-        response[mask] = w * np.exp(1j * np.angle(response[mask]))
-        response = xr.DataArray(
-            data=response,
-            coords={'frequency': result.coords['frequency']},
-            dims='frequency')
-        result = result / response
-    # format xarray
-    dims = (
-        [dim for dim in result.dims if dim not in ['frequency', 'time']]
-        + ['frequency', 'time'])
-    result = result.transpose(*dims)
-    result.name = channel_dict[tr.stats.channel]
-    result = result.dropna(dim='time')
+    t = data["time"]
+    delta = 1.0 / da.attrs["sampling_rate"]
+    f = np.fft.rfftfreq(nperseg, delta)
+    data = np.fft.rfft(data).T
+    result = xr.DataArray(
+        data, {'time': t, 'frequency': f}, ('frequency', 'time'))
+    result = result.dropna("time")
     return result
 
 
-def time_frequency(st, nperseg, step, water_level=None, align=True):
+def remove_response(tf, response, water_level):
+    """
+    Remove instrumental response.
+    """
+    f = tf.coords['frequency']
+    response = response.get_evalresp_response_for_frequencies(f)
+    w = np.abs(response).max() * 10.0 ** (-water_level / 20.0)
+    mask = np.abs(response) < w
+    response[mask] = w * np.exp(1j * np.angle(response[mask]))
+    response = xr.DataArray(response, {'frequency': f}, 'frequency')
+    tf /= response
+    return tf
+
+
+def time_frequency(st, nperseg, step, water_level=None):
     """
     Compute time-frequency representations of trace in stream.
 
@@ -138,12 +102,16 @@ def time_frequency(st, nperseg, step, water_level=None, align=True):
         'frequency' coordinates.
 
     """
-    xarrs = [stft(tr, nperseg, step, water_level) for tr in st]
-    if align:
-        time = xarrs[0]['time']
-        xarrs = [xarr.assign_coords(time=time) for xarr in xarrs]
-    z = xr.merge(xarrs)
-    return z[sorted(z.keys())]
+    ds = to_dataset(st)
+    data_vars = {}
+    for channel in ds:
+        trace = ds[channel]
+        result = stft(trace, nperseg, step)
+        if water_level is not None:
+            response = trace.attrs["response"]
+            result = remove_response(result, response, water_level)
+        data_vars[channel] = result
+    return xr.Dataset(data_vars)
 
 
 def intensity(z, method='intensity', mode='net'):
@@ -185,7 +153,7 @@ def intensity(z, method='intensity', mode='net'):
             result = (z[['vx', 'vy']].to_array(dim='component')
                       .transpose('frequency', 'time', 'component'))
             x = np.stack((result.real.values, result.imag.values), axis=-1)
-            u, s, vh = np.linalg.svd(x)
+            u, _, _ = np.linalg.svd(x)
             r = u[..., 0, 0] + 1j * u[..., 0, 1]
             result = xr.DataArray(
                 data=r,
@@ -348,7 +316,6 @@ def orientation_frequency(r, track, bins, sigma=None, fmin=None, fmax=None):
     """
     r = r.sel(frequency=slice(fmin, fmax))
     r = r.dropna(dim='time')
-    track = track2xarr(track)
     track = track.interp_like(r)
     track /= np.abs(track)
     result = r.conj() * track * np.exp(1j * np.pi / bins)

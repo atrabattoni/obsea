@@ -5,6 +5,7 @@ Used to load stream corresponding to a track.
 
 """
 from obspy import UTCDateTime
+from .gis import to_posix
 
 
 def load_stream(track, client, inventory, station, channel, min_duration=600,
@@ -40,8 +41,8 @@ def load_stream(track, client, inventory, station, channel, min_duration=600,
         Loaded seismological data. None if importation failed.
 
     """
-    starttime = UTCDateTime(track.coords[0][-1])
-    endtime = UTCDateTime(track.coords[-1][-1])
+    starttime = UTCDateTime(to_posix(track["time"][0].values))
+    endtime = UTCDateTime(to_posix(track["time"][-1].values))
     duration = endtime - starttime
     if duration > max_duration:
         return None

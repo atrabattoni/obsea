@@ -22,8 +22,7 @@ def read_cls(fname, cargo_and_tanker=True):
     Returns
     -------
     pandas.DataFrame
-        AIS data as a DataFrame with four columns: mmsi - lon - lat - timestamp
-        (POSIX timestamps in seconds)
+        AIS data as a DataFrame with four columns: mmsi - time - lon - lat
 
     """
     ais = pd.read_csv(fname, sep=';')
@@ -44,9 +43,9 @@ def read_cls(fname, cargo_and_tanker=True):
             int(x[17:19]))
 
     s = ais.locDate + ' ' + ais.locTime
-    ais.loc[:, 'timestamp'] = s.apply(parser)
+    ais.loc[:, 'time'] = s.apply(parser)
 
-    ais = ais[['mmsi', 'lon', 'lat', 'timestamp']]
+    ais = ais[['mmsi', 'time', 'lon', 'lat']]
 
     return ais
 
@@ -65,8 +64,7 @@ def read_marine_traffic(fname, terrestrial=True):
     Returns
     -------
     pandas.DataFrame
-        AIS data as a DataFrame with four columns: mmsi - lon - lat - timestamp
-        (POSIX timestamps in seconds)
+        AIS data as a DataFrame with four columns: mmsi - lon - lat - time
 
     """
     ais = pd.read_csv(fname, parse_dates=['TIMESTAMP UTC'])
@@ -83,9 +81,9 @@ def read_marine_traffic(fname, terrestrial=True):
         'HEADING': 'heading',
         'LAT': 'lat',
         'LON': 'lon',
-        'TIMESTAMP UTC': 'timestamp'})
+        'TIMESTAMP UTC': 'time'})
 
-    ais = ais[['mmsi', 'lon', 'lat', 'timestamp']]
+    ais = ais[['mmsi', 'time', 'lon', 'lat']]
 
     return ais
 

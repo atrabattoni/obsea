@@ -19,6 +19,13 @@ def to_posix(t):
     return (t - np.datetime64(1, "s")) / np.timedelta64(1, "s")
 
 
+def from_posix(t):
+    """
+    Convert posix float into datetime.
+    """
+    return np.datetime64(int(round(1e9 * t)), 'ns')
+
+
 def from_ais(ais):
     """
     Convert an AIS dataframe into a track dataarray. 
@@ -68,6 +75,28 @@ def from_linestring(linestring, crs):
         coords={'time': t},
         dims='time',
         attrs={'crs': crs},
+    )
+
+
+def get_cpa(track):
+    linestring = to_linestring(track)
+    origin = Point(0, 0)
+    cpa = linestring.interpolate(linestring.project(origin))
+    x = cpa.coords[0][0]
+    y = cpa.coords[0][1]
+    t = np.datetime64(int(round(cpa.coords[0][2])), 'ns')
+    return xr.DataArray([x + 1j * y], {'time': [t]}, 'time', attrs=track.attrs)
+
+
+def simplify(track):
+    v, r0 = np.polyfit(to_posix(track["time"]), track.values, 1)
+    t = - (r0.real * v.real + r0.imag * v.imag) / np.abs(v) ** 2
+    r = v * t + r0
+    t = from_posix(t)
+    return xr.Dataset(
+        data_vars={"r": ("time", [r]), "v": ("time", [v])},
+        coords={"time": [t]},
+        attrs=track.attrs,
     )
 
 

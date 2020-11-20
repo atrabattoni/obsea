@@ -78,7 +78,7 @@ def read_marine_traffic(fname, terrestrial=True):
         'STATION': 'source'})
 
     if terrestrial:
-        mask = (ais['source'] == 'TER') & (ais['status'] == 0)
+        mask = (ais['source'] == 'TER') & (ais['navigationStatus'] == 0)
         ais = ais[mask]
 
     return ais

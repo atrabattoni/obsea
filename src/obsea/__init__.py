@@ -19,4 +19,5 @@ from .gis import *
 from .io import *
 from .plot import *
 from .processing import *
+from .raytracing import *
 from .station import *

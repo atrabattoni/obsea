@@ -23,11 +23,15 @@ def from_ais(ais):
     """
     Convert an AIS dataframe into a track dataarray. 
     """
+    keys = ['mmsi', 'imo', 'shipName', 'aisShipType',
+            'shipDraught', 'shipLength', 'shipWidth']
+    attrs = {key: ais[key].iloc[0] for key in keys if key in ais}
+    attrs["crs"] = ccrs.PlateCarree()
     return xr.DataArray(
         data=ais['lon'] + 1j * ais['lat'],
         coords={'time': ais['time']},
         dims='time',
-        attrs={"crs": ccrs.PlateCarree()},
+        attrs=attrs,
     )
 
 

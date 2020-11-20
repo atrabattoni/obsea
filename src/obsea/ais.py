@@ -35,7 +35,7 @@ def read_cls(fname, cargo_and_tanker=True):
         AIS data as a DataFrame with four columns: mmsi - time - lon - lat
 
     """
-    ais = pd.read_csv(fname, sep=';')
+    ais = pd.read_csv(fname, sep=';', dtype={'imo': 'Int64'})
     s = ais['locDate'] + ' ' + ais['locTime']
     ais.loc[:, 'time'] = s.apply(cls_time_parser)
 

@@ -32,7 +32,28 @@ def initial(z0, theta, ssp):
     return [r0, z0, ksi0, zeta0, t0]
 
 
-def trace_direct(ssp, depth, n, smax, **kwargs):
+def reflectioncoeff(ksi, zeta, c, rho):
+    rho0 = 1000.0
+    ksi = np.abs(ksi)  # boundary coordinate
+    zeta = np.abs(zeta)  # boundary coordinate
+    ksic = np.sqrt(ksi ** 2 - (1.0 / complex(c)) ** 2)
+    return - (ksic * rho0 - 1j * zeta * rho) / (ksic * rho0 + 1j * zeta * rho)
+
+
+# def reflectioncoeff(ksi, zeta, cp, rho):
+#     cs = 500.0
+#     rho0 = 1000.0
+#     ksi = np.abs(ksi)  # boundary coordinate
+#     zeta = np.abs(zeta)  # boundary coordinate
+#     ksip = np.sqrt(ksi ** 2 - (1.0 / complex(cp)) ** 2)
+#     ksis = np.sqrt(ksi ** 2 - (1.0 / complex(cs)) ** 2)
+#     mu = rho * cs**2
+#     f = ksip * (ksi**2 - ksis**2)
+#     g = ((ksis**2 + ksi**2)**2 - 4.0 * ksis * ksip * ksi**2) * mu
+#     return - (rho0 * f - 1j * zeta * g) / (rho0 * f + 1j * zeta * g)
+
+
+def trace_direct(ssp, depth, c, rho, n, smax, **kwargs):
 
     def fun(s, y):
         _, z, ksi, zeta, _, = y
@@ -63,13 +84,14 @@ def trace_direct(ssp, depth, n, smax, **kwargs):
         y = np.ravel(sol.y_events)
         r[k], _, ksi[k], zeta[k], toa[k] = y
 
+    coeff = reflectioncoeff(ksi, zeta, c, rho)
+
     r[0] = 0.0
 
     return xr.Dataset(
         data_vars={
-            "ksi": ("distance", ksi),
-            "zeta": ("distance", zeta),
-            "toa": ("distance", toa)},
+            "toa": ("distance", toa),
+            "poa": ("distance", coeff)},
         coords={"distance": r})
 
 
@@ -77,6 +99,9 @@ def reflect_direct(direct, n):
     reflected = direct.copy()
     reflected["distance"] = n * reflected["distance"]
     reflected["toa"] = n * reflected["toa"]
+    reflected["poa"] = (1.0 + reflected["poa"]) * \
+        (-reflected["poa"])**((n - 1) // 2)
+    reflected["poa"] = np.arctan2(reflected["poa"].imag, reflected["poa"].real)
     return reflected
 
 
@@ -94,3 +119,10 @@ def compute_tdoa(multipath):
     tdoa = tdoa.rename(path="interference")
     tdoa["interference"] = ["13", "35", "57"]
     return tdoa
+
+
+def compute_pdoa(multipath):
+    pdoa = - multipath["poa"].diff('path') % (2*np.pi)
+    pdoa = pdoa.rename(path="interference")
+    pdoa["interference"] = ["13", "35", "57"]
+    return pdoa

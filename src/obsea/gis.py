@@ -60,7 +60,9 @@ def to_linestring(track):
     """
     Convert a track into a linestring.
     """
-    coords = zip(track.real, track.imag, track['time'])
+    coords = np.stack(
+        (track.real, track.imag, track['time'].astype('float')),
+        axis=1)
     return LineString(coords)
 
 

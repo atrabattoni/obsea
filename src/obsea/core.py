@@ -19,7 +19,12 @@ CHANNEL_TO_AXIS = {
     'BDH': 'p',
     'BH1': 'vy',
     'BH2': 'vx',
-    'BHZ': 'vz'}
+    'BHZ': 'vz',
+    'HDH': 'p',
+    'EH1': 'vy',
+    'EH2': 'vx',
+    'EH3': 'vz',
+}
 
 
 def to_dataset(st):

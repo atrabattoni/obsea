@@ -146,12 +146,16 @@ def read_ais(ais, timedelta):
 
     """
     ais = ais.sort_values(["mmsi", "time"])
-    ais["timedelta"] = ais.groupby("mmsi")["time"].apply(lambda x: x.diff())
-    ais["passage"] = ais.groupby("mmsi")["timedelta"].apply(
+    ais["timedelta"] = ais.groupby("mmsi", group_keys=False)["time"].apply(
+        lambda x: x.diff()
+    )
+    ais["passage"] = ais.groupby("mmsi", group_keys=False)["timedelta"].apply(
         lambda x: (x > timedelta).cumsum()
     )
-    ais = ais.groupby(["mmsi", "passage"]).filter(lambda x: len(x) > 1)
-    tracks = ais.groupby(["mmsi", "passage"]).apply(from_ais)
+    ais = ais.groupby(["mmsi", "passage"], group_keys=False).filter(
+        lambda x: len(x) > 1
+    )
+    tracks = ais.groupby(["mmsi", "passage"], group_keys=False).apply(from_ais)
     tracks = tracks.reset_index("passage", drop=True)
     return tracks
 
@@ -223,3 +227,13 @@ def correct_track(track, B):
     u = v / np.abs(v)
     track = track - u * B
     return track
+
+
+def save_complex(data_array, *args, **kwargs):
+    ds = xr.Dataset({"real": data_array.real, "imag": data_array.imag})
+    return ds.to_netcdf(*args, **kwargs)
+
+
+def read_complex(*args, **kwargs):
+    ds = xr.open_dataset(*args, **kwargs)
+    return ds["real"] + ds["imag"] * 1j

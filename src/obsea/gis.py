@@ -182,6 +182,7 @@ def select_tracks(tracks, station, radius, cpa):
     crs = f"+proj=aeqd +lon_0={station.longitude} +lat_0={station.latitude}"
     point = Point(0, 0)
     tracks = tracks.apply(to_crs, args=(crs,))
+    meta = tracks.apply(getattr, args=("attrs",))
     tracks = tracks.apply(to_linestring)
     tracks = tracks[tracks.apply(get_distance, args=(point,)) <= cpa]
     tracks = tracks.apply(intersect, args=(point, radius))
@@ -193,6 +194,9 @@ def select_tracks(tracks, station, radius, cpa):
     )  # ensure that time is not reversed
     tracks = tracks[tracks.apply(get_distance, args=(point,)) <= cpa]
     tracks = tracks.apply(from_linestring, args=(crs,))
+    meta = meta[tracks.index]
+    for attrs, track in zip(meta, tracks):
+        track.attrs = attrs
     return tracks
 
 

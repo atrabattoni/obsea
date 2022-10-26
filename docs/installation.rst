@@ -18,7 +18,7 @@ As several required packages to install obsea can only be found on the ``conda-f
 
 4. Install dependencies::
 
-    conda install cartopy colorcet dask matplotlib numba numpy obspy pandas python scikit-learn scipy shapely xarray
+    conda install cartopy colorcet dask matplotlib numba numpy obspy pandas python scikit-learn scipy shapely xarray netcdf4 pyproj
 
 5. Install obsea::
 

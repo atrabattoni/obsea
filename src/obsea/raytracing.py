@@ -1,3 +1,7 @@
+"""
+Ray tracing module.
+"""
+
 import numpy as np
 import xarray as xr
 from scipy.integrate import quad, solve_ivp
@@ -26,7 +30,10 @@ def equivalent_celerity(ssp, depth):
 
 def initial(z0, theta, ssp):
     r0 = t0 = 0.0
-    c0, _, = ssp(z0)
+    (
+        c0,
+        _,
+    ) = ssp(z0)
     ksi0 = np.cos(theta) / c0
     zeta0 = np.sin(theta) / c0
     return [r0, z0, ksi0, zeta0, t0]
@@ -36,8 +43,8 @@ def reflectioncoeff(ksi, zeta, c, rho):
     rho0 = 1000.0
     ksi = np.abs(ksi)  # boundary coordinate
     zeta = np.abs(zeta)  # boundary coordinate
-    ksic = np.sqrt(ksi ** 2 - (1.0 / complex(c)) ** 2)
-    return - (ksic * rho0 - 1j * zeta * rho) / (ksic * rho0 + 1j * zeta * rho)
+    ksic = np.sqrt(ksi**2 - (1.0 / complex(c)) ** 2)
+    return -(ksic * rho0 - 1j * zeta * rho) / (ksic * rho0 + 1j * zeta * rho)
 
 
 # def reflectioncoeff(ksi, zeta, cp, rho):
@@ -54,9 +61,14 @@ def reflectioncoeff(ksi, zeta, c, rho):
 
 
 def trace_direct(ssp, depth, c, rho, n, smax, **kwargs):
-
     def fun(s, y):
-        _, z, ksi, zeta, _, = y
+        (
+            _,
+            z,
+            ksi,
+            zeta,
+            _,
+        ) = y
         c, dcdz = ssp(z)
         dyds = [
             c * ksi,
@@ -69,6 +81,7 @@ def trace_direct(ssp, depth, c, rho, n, smax, **kwargs):
 
     def hit_ground(s, y):
         return y[1] - depth
+
     hit_ground.terminal = True
     hit_ground.direction = 1
 
@@ -89,18 +102,16 @@ def trace_direct(ssp, depth, c, rho, n, smax, **kwargs):
     r[0] = 0.0
 
     return xr.Dataset(
-        data_vars={
-            "toa": ("distance", toa),
-            "poa": ("distance", coeff)},
-        coords={"distance": r})
+        data_vars={"toa": ("distance", toa), "poa": ("distance", coeff)},
+        coords={"distance": r},
+    )
 
 
 def reflect_direct(direct, n):
     reflected = direct.copy()
     reflected["distance"] = n * reflected["distance"]
     reflected["toa"] = n * reflected["toa"]
-    reflected["poa"] = (1.0 + reflected["poa"]) * \
-        (-reflected["poa"])**((n - 1) // 2)
+    reflected["poa"] = (1.0 + reflected["poa"]) * (-reflected["poa"]) ** ((n - 1) // 2)
     reflected["poa"] = np.arctan2(reflected["poa"].imag, reflected["poa"].real)
     return reflected
 
@@ -115,14 +126,14 @@ def compose_multipath(direct, n, r):
 
 
 def compute_tdoa(multipath):
-    tdoa = multipath["toa"].diff('path')
+    tdoa = multipath["toa"].diff("path")
     tdoa = tdoa.rename(path="interference")
     tdoa["interference"] = ["13", "35", "57"]
     return tdoa
 
 
 def compute_pdoa(multipath):
-    pdoa = - multipath["poa"].diff('path') % (2*np.pi)
+    pdoa = -multipath["poa"].diff("path") % (2 * np.pi)
     pdoa = pdoa.rename(path="interference")
     pdoa["interference"] = ["13", "35", "57"]
     return pdoa

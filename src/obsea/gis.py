@@ -128,7 +128,7 @@ def split_multilinestring(geom):
         geoms = geom.geoms
     else:
         geoms = [geom]
-    return pd.Series(geoms)
+    return pd.Series(geoms)  # TODO: Handle ShapelyDeprecationWarning
 
 
 def sort_linestring(linestring):

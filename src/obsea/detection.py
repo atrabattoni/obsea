@@ -236,10 +236,8 @@ def cepstral_detection(ceps, model, grid, nsigma, t_step=None, t=None):
 
 @njit
 def compute_logell(x, thresh, weight, index, halfwidth):
-
     _, Nt = x.shape
     Ni, Nr, _ = thresh.shape
-
     logell = np.zeros((Ni, Nr, Nt))
     for i in range(Ni):  # interference
         for j in range(Nr):  # distance

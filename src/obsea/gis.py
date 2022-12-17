@@ -120,6 +120,17 @@ def intersect(linestring, point, radius):
     return area.intersection(linestring)
 
 
+def split_multilinestring(geom):
+    """ "
+    Split any eventual multilinestring into linestrings
+    """
+    if hasattr(geom, "geoms"):
+        geoms = geom.geoms
+    else:
+        geoms = [geom]
+    return pd.Series(geoms)
+
+
 def sort_linestring(linestring):
     """
     Sort a linestring temporally.
@@ -191,7 +202,7 @@ def select_tracks(tracks, station, radius, cpa):
     tracks = tracks[tracks.apply(get_distance, args=(point,)) <= cpa]
     tracks = tracks.apply(intersect, args=(point, radius))
     tracks = (
-        tracks.apply(pd.Series)  # split MultiLineString into LineString
+        tracks.apply(split_multilinestring)
         .stack()
         .reset_index(level=1, drop=True)  # one row per LineString
         .apply(sort_linestring)

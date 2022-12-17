@@ -162,13 +162,33 @@ def impulsive_detection(
     return ell
 
 
-def cepstral_detection(
-    ceps, model, dr, rmax, dv, vmax, nsigma, dt, t_step=None, t=None
-):
+def cepstral_detection(ceps, model, grid, nsigma, t_step=None, t=None):
     """
     Compute the radial log likelihood ratio.
+
+    Parameters
+    ----------
+    ceps: DataArray
+        The cepstrogram from which the detection with be performed. Dimensions must be
+        (`quefrency`, `time`).
+    model: DataArray
+        The propagative model. Give the expected cepstram mean for each `interference`,
+        `distance` and `quefrency` dimensions.
+    grid: dict
+        Parameters of the grid over which probabilities are computed. Must include
+        `dt` the lenght of the sliding window (seconds), `dr` and `rmax` the radial
+        step and max value (meters), and, `dv` and `vmax the speed step and max value
+        (m/s).
+    nsigma: float
+        Smoothing value along the quefrency dimension in number of samples.
+    t_step: float
+        Temporal stepping (seconds) at which compute probabilities.
+    t: 1d array
+        Time (seconds) at wich probabilties must be computed. Usefull to synchronize
+        with another detector. If provided `t_step` is ignored.
     """
     # Logell computation
+    dt, dr, rmax, dv, vmax = map(grid.get, ("dt", "dr", "rmax", "dv", "vmax"))
     data = compute_logell(ceps.values, **model)
     logell = xr.DataArray(
         data=data,

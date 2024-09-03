@@ -22,7 +22,7 @@ As several required packages to install obsea can only be found on the ``conda-f
 
 5. Install obsea::
 
-    pip install obsea
+    pip install git+https://github.com/atrabattoni/obsea.git
 
 Congratulation you just installed obsea ! Remember to activate the environment where you installed obsea each time you need to use it.
 

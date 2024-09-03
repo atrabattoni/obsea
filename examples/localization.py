@@ -15,7 +15,7 @@ inventory = client.get_stations(network='YV', station='RR03', level='response')
 network, = inventory
 ais_fname = obsea.get_dataset_path('ais_marine_traffic')
 mmsi_list = pd.read_csv(
-    obsea.get_dataset_path('mmsi_list'), squeeze=True).tolist()
+    obsea.get_dataset_path('mmsi_list')).squeeze("columns").tolist()
 ship_length = pd.read_csv(
     obsea.get_dataset_path('ship_length'), index_col='mmsi')
 

@@ -13,7 +13,7 @@ from dask.diagnostics import ProgressBar
 client = Client('RESIF')
 inventory = client.get_stations(network='YV', station='RR*', level='response')
 station_list = pd.read_csv(
-    obsea.get_dataset_path('station_list'), squeeze=True).tolist()
+    obsea.get_dataset_path('station_list')).squeeze("columns").tolist()
 ais_fname = obsea.get_dataset_path('ais_cls')
 
 

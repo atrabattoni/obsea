@@ -154,6 +154,8 @@ def make_delay(track_xarr):
 
     """
     t = track_xarr['time'].values
+    if np.issubdtype(t.dtype, np.datetime64):
+        t = (t - np.datetime64(1, "s")) / np.timedelta64(1, "s")
     t0 = t[0]
     dt = t[1] - t[0]
     y = track_xarr.values
@@ -202,6 +204,8 @@ def make_beamform(x, y, xarr, delay, interpolation='cubic'):
         raise NotImplementedError
     zp = xarr.values
     xp = xarr['time'].values
+    if np.issubdtype(xp.dtype, np.datetime64):
+        xp = (xp - np.datetime64(1, "s")) / np.timedelta64(1, "s")
     yp = xarr['quefrency'].values
     delay = njit(delay)
 

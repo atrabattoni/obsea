@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "obsea"
+version = "0.1"
+description = "Metamorphoses Ocean-bottom seismometers into watchful observers of the Oceans."
+readme = {file = "README.rst", content-type = "text/x-rst"}
+authors = [
+	{name = "Alister Trabattoni", email = "alister.trabattoni@gmail.com"},
+]
+license = {text = "LGPL-3.0-only"}
+classifiers = [
+	"Development Status :: 4 - Beta",
+	"Programming Language :: Python",
+]
+urls = {Documentation = "https://obsea.readthedocs.io/en/latest/", Source = "https://github.com/atrabattoni/obsea"}
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
+exclude = ["tests*"]
+
+[tool.setuptools.package-data]
+obsea = ["data/*.csv"]
+
+[tool.pytest.ini_options]
+addopts = [
+	"--cov",
+	"obsea",
+	"--cov-report",
+	"term-missing",
+	"--verbose",
+]
+norecursedirs = ["dist", "build", ".tox"]
+testpaths = ["tests"]

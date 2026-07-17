@@ -26,9 +26,8 @@ sys.path.insert(0, os.path.join(__location__, '../src/obsea'))
 # This hack is necessary since RTD does not issue `sphinx-apidoc` before running
 # `sphinx-build -b html . _build/html`. See Issue:
 # https://github.com/rtfd/readthedocs.org/issues/1139
-# DON'T FORGET: Check the box "Install your project inside a virtualenv using
-# setup.py install" in the RTD Advanced Settings.
-# Additionally it helps us to avoid running apidoc manually
+# Install the project from its pyproject-based build so autodoc can import it.
+# Additionally it helps us avoid running apidoc manually
 
 try:  # for Sphinx >= 1.7
     from sphinx.ext import apidoc
@@ -44,14 +43,13 @@ except FileNotFoundError:
 
 try:
     import sphinx
-    from pkg_resources import parse_version
 
     cmd_line_template = "sphinx-apidoc -f -o {outputdir} {moduledir}"
     cmd_line = cmd_line_template.format(
         outputdir=output_dir, moduledir=module_dir)
 
     args = cmd_line.split(" ")
-    if parse_version(sphinx.__version__) >= parse_version('1.7'):
+    if getattr(sphinx, "version_info", (0, 0)) >= (1, 7):
         args = args[1:]
 
     apidoc.main(args)

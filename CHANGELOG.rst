@@ -9,6 +9,9 @@ Version 0.1 (2026-07-20)
   is deprecated in ObsPy). ``load_stream`` lost its ``inventory`` argument, and
   ``time_frequency`` gained an ``inventory`` keyword which is required when
   ``water_level`` is set to remove the instrumental response.
+- Examples and docs: FDSN client switched from RESIF to EPOSFR, Read the Docs
+  configuration added, installation guide simplified to a plain
+  ``pip install obsea``.
 - Packaging: migrate from ``setup.py``/``setup.cfg`` to ``pyproject.toml`` with
   proper dependency declaration (#2), add the missing ``netCDF4`` dependency,
   and use ``importlib.metadata`` instead of the deprecated ``pkg_resources``
@@ -20,9 +23,6 @@ Version 0.1 (2026-07-20)
 - FIX: compatibility with newer Shapely (deprecated usages removed), SciPy
   (``scipy.signal.windows`` import) and pandas (``read_csv`` ``squeeze``
   argument removal, in the examples).
-- Examples and docs: FDSN client switched from RESIF to EPOSFR, Read the Docs
-  configuration added, installation guide simplified to a plain
-  ``pip install obsea``.
 
 Version 0.0.4 (2023-01-18)
 ==========================

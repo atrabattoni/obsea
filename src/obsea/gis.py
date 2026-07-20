@@ -16,14 +16,14 @@ def to_posix(t):
     """
     Convert datetime into posix float in seconds.
     """
-    return (t - np.datetime64(1, "s")) / np.timedelta64(1, "s")
+    return (t - np.datetime64(0, "s")) / np.timedelta64(1, "s")
 
 
 def from_posix(t):
     """
     Convert posix float into datetime.
     """
-    return np.datetime64(int(round(1e9 * t)), "ns")
+    return np.rint(1e9 * t).astype("datetime64[ns]")
 
 
 def from_ais(ais):
@@ -65,7 +65,7 @@ def to_linestring(track):
     """
     Convert a track into a linestring.
     """
-    coords = np.stack((track.real, track.imag, track["time"].astype("float")), axis=1)
+    coords = np.stack((track.real, track.imag, to_posix(track["time"])), axis=1)
     return LineString(coords)
 
 
@@ -74,7 +74,7 @@ def from_linestring(linestring, crs):
     Convert a linestring into a crs.
     """
     x, y, t = [np.asarray(e) for e in zip(*linestring.coords)]
-    t = t.astype("datetime64[ns]")
+    t = from_posix(t)
     return xr.DataArray(
         data=x + 1j * y,
         coords={"time": t},
@@ -89,7 +89,7 @@ def get_cpa(track):
     cpa = linestring.interpolate(linestring.project(origin))
     x = cpa.coords[0][0]
     y = cpa.coords[0][1]
-    t = np.datetime64(int(round(cpa.coords[0][2])), "ns")
+    t = from_posix(cpa.coords[0][2])
     return xr.DataArray([x + 1j * y], {"time": [t]}, "time", attrs=track.attrs)
 
 

@@ -60,7 +60,7 @@ for station in network:
 def process(mmsi, track, station):
 
     st = obsea.load_stream(
-        track, client, inventory, station, 'BDH', nb_channels=1)
+        track, client, station, 'BDH', nb_channels=1)
     if st is None:
         return None
 

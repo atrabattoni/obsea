@@ -34,13 +34,13 @@ Users are generally asked to provide three type of Inputs:
 
 - **AIS**: A Pandas DataFrame which must at least have four columns: ``'mmsi'``, ``'lon'``, ``'lat'`` and ``'timestamp'`` (As POSIX timestamps in seconds). Obsea provides helper function to import CSV files of AIS logs from several providers in the ``ais`` module.
 
-Seismological data are handled with the Obspy_ **Stream** class which embed each components as a Trace (documentation can be found here_). Responses must be attached in order to remove the instrumental response. This is can be done by attaching the responses stored in the Inventory to the Stream. If working with source of known trajectories, local tracks ca be provided to the ``load_stream`` (in the ``io`` module) function to load the relevant time segment when the source passes close by the instrument. 
+Seismological data are handled with the Obspy_ **Stream** class which embed each components as a Trace (documentation can be found here_). If working with source of known trajectories, local tracks ca be provided to the ``load_stream`` (in the ``io`` module) function to load the relevant time segment when the source passes close by the instrument.
 
 When working with known source positions, **AIS** data is processed into tracks per ship thank to the ``gis`` module. This is done in two steps. First, **Global Tracks** are performed with the ``read_ais`` function. Second, if working with stations, **Local Tracks** in a local coordinate reference system in meters where zero is the instrument location are performed for global tracks passing close enough to the station of interest. This is performed with the ``select_tracks`` function which needs the Inventory to know the instrument location.
 
 In Obsea, all 2D representations are handled thanks to the Xarray_ library. Coordinates must have those names: ``'time'``, ``'frequency'``, ``'azimuth'``, ``'quefrency'``, ``'orientation'``, ``'x'``, ``'y'``. Lets list available 2D representations:
 
-- **Time-Frequecy**: STFT is computed for each Trace in a Stream with the ``time_frequency`` function (in the ``core`` module). If responses are available, instrumental response removal is possible as that stage (water level deconvolution).
+- **Time-Frequecy**: STFT is computed for each Trace in a Stream with the ``time_frequency`` function (in the ``core`` module). If an Inventory is provided, instrumental response removal is possible as that stage (water level deconvolution).
 
 - **Azigram**: Horizontal Direction of Arrival is computed with the ``azigram`` function (in the ``core`` module) for each time and frequency from the 4 time-frequency representation of the 4 components of the instruments (The vertical component can be omitted though).
 

@@ -81,12 +81,12 @@ def remove_response(tf, response, water_level):
     return tf
 
 
-def time_frequency(st, nperseg, step, water_level=None):
+def time_frequency(st, nperseg, step, water_level=None, inventory=None):
     """
     Compute time-frequency representations of trace in stream.
 
-    Instrumental response can be remove by water level deconvolution if it is
-    attached to the trace.
+    Instrumental response can be remove by water level deconvolution if an
+    inventory is provided.
 
     Parameters
     ----------
@@ -99,6 +99,9 @@ def time_frequency(st, nperseg, step, water_level=None):
     water_level: int, optional
         Water level (in dB) used in water level deconvolution. If None, no
         instrumental removal is perform (Defaults).
+    inventory: obspy.Inventory, optional
+        Inventory used to retrieve the instrumental responses. Required if
+        water_level is not None.
 
     Returns
     -------
@@ -113,7 +116,10 @@ def time_frequency(st, nperseg, step, water_level=None):
         trace = ds[channel]
         result = stft(trace, nperseg, step)
         if water_level is not None:
-            response = trace.attrs["response"]
+            seed_id = "{network}.{station}.{location}.{channel}".format(
+                **trace.attrs)
+            response = inventory.get_response(
+                seed_id, trace.attrs["starttime"])
             result = remove_response(result, response, water_level)
         data_vars[channel] = result
     return xr.Dataset(data_vars)

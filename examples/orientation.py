@@ -57,7 +57,7 @@ for station in network:
 # Process data
 @delayed
 def process(track, station):
-    st = obsea.load_stream(track, client, inventory, station, '*')
+    st = obsea.load_stream(track, client, station, '*')
     if st is None:
         return None
     tf = obsea.time_frequency(st, tf_nperseg, tf_step, tf_water_level)

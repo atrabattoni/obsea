@@ -8,7 +8,7 @@ from obspy import UTCDateTime
 from .gis import to_posix
 
 
-def load_stream(track, client, inventory, station, channel, min_duration=600,
+def load_stream(track, client, station, channel, min_duration=600,
                 max_duration=86400, nb_channels=4, ttol=1e-4):
     """
     Load a stream over the same duration than a track.
@@ -19,8 +19,6 @@ def load_stream(track, client, inventory, station, channel, min_duration=600,
         Moving source trajectory.
     client : obpsy.Client
         Used to (down)load the stream.
-    inventory : obspy.Inventory
-        Used to attach the instrument responses.
     station : obspy.station
         Wanted stations.
     channel : string
@@ -69,7 +67,6 @@ def load_stream(track, client, inventory, station, channel, min_duration=600,
     for tr in st:
         if (tr.data == tr[0]).all():
             return None
-    st.attach_response(inventory)
     return st
 
 

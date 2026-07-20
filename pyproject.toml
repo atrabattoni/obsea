@@ -6,40 +6,38 @@ build-backend = "setuptools.build_meta"
 name = "obsea"
 version = "0.1"
 description = "Metamorphoses Ocean-bottom seismometers into watchful observers of the Oceans."
-readme = {file = "README.rst", content-type = "text/x-rst"}
+readme = { file = "README.rst", content-type = "text/x-rst" }
 authors = [
-	{name = "Alister Trabattoni", email = "alister.trabattoni@gmail.com"},
+	{ name = "Alister Trabattoni", email = "alister.trabattoni@gmail.com" },
 ]
-license = {text = "LGPL-3.0-only"}
+license = { text = "LGPL-3.0-only" }
 requires-python = ">=3.10"
 dependencies = [
-	"numpy",
-	"pandas",
-	"xarray",
-	"scipy",
-	"numba",
-	"pyproj",
-	"shapely",
-	"obspy",
-	"matplotlib",
 	"colorcet",
-	"scikit-learn",
 	"dask",
+	"matplotlib",
+	"netCDF4",
+	"numba",
+	"numpy",
+	"obspy",
+	"pandas",
+	"pyproj",
+	"scikit-learn",
+	"scipy",
+	"shapely",
+	"xarray",
 ]
 classifiers = [
 	"Development Status :: 4 - Beta",
 	"Programming Language :: Python",
 ]
-urls = {Documentation = "https://obsea.readthedocs.io/en/latest/", Source = "https://github.com/atrabattoni/obsea"}
+urls = { Documentation = "https://obsea.readthedocs.io/en/latest/", Source = "https://github.com/atrabattoni/obsea" }
 
 [project.optional-dependencies]
-testing = [
-	"pytest",
-	"pytest-cov",
-]
+testing = ["pytest", "pytest-cov"]
 
 [tool.setuptools]
-package-dir = {"" = "src"}
+package-dir = { "" = "src" }
 include-package-data = true
 
 [tool.setuptools.packages.find]
@@ -50,12 +48,6 @@ exclude = ["tests*"]
 obsea = ["data/*.csv"]
 
 [tool.pytest.ini_options]
-addopts = [
-	"--cov",
-	"obsea",
-	"--cov-report",
-	"term-missing",
-	"--verbose",
-]
+addopts = ["--cov", "obsea", "--cov-report", "term-missing", "--verbose"]
 norecursedirs = ["dist", "build", ".tox"]
 testpaths = ["tests"]

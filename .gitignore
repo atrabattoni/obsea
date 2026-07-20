@@ -46,6 +46,8 @@ MANIFEST
 
 # Per-project virtualenvs
 .venv*/
+.venv
+uv.lock
 
 # Mac DS_Store
 *.DS_Store

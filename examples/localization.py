@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 
 
 # Inputs
-client = Client('RESIF')
+client = Client('EPOSFR')
 inventory = client.get_stations(network='YV', station='RR03', level='response')
 network, = inventory
 ais_fname = obsea.get_dataset_path('ais_marine_traffic')

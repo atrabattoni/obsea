@@ -12,7 +12,7 @@ This package also allows to detect, localize and track ships and potentially wha
 
     Trabattoni, A., Barruol, G., Dréo, R., & Boudraa, A. (2023). Ship detection and tracking from single ocean-bottom seismic and hydroacoustic stations. The Journal of the Acoustical Society of America, 153(1), 260–273. `doi:10.1121/10.00168109 <https://doi.org/10.1121/10.00168109>`_
 
-A small toy dataset of AIS data is provided to test the package. It consists of a few weeks of data around the location of a station (RR03) deployed during the `RHUM-RUM`__ experiment from two different providers. Associated seismological data can be downloaded from the RESIF_ web services.
+A small toy dataset of AIS data is provided to test the package. It consists of a few weeks of data around the location of a station (RR03) deployed during the `RHUM-RUM`__ experiment from two different providers. Associated seismological data can be downloaded from the EPOSFR_ web services.
 
 Obsea is provided under the `Version 3 of the GNU Lesser General Public License`__. 
 
@@ -41,6 +41,6 @@ Indices and tables
 
 .. _RR: http://www.rhum-rum.net/en/
 __ RR_
-.. _RESIF: https://www.resif.fr/
+.. _EPOSFR: https://www.resif.fr/
 .. _LGPL: https://www.gnu.org/licenses/lgpl.txt
 __ LGPL_

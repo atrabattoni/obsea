@@ -10,7 +10,7 @@ from dask.diagnostics import ProgressBar
 
 
 # Inputs
-client = Client('RESIF')
+client = Client('EPOSFR')
 inventory = client.get_stations(network='YV', station='RR*', level='response')
 station_list = pd.read_csv(
     obsea.get_dataset_path('station_list')).squeeze("columns").tolist()
